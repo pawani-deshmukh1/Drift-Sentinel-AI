@@ -23,7 +23,7 @@ Instead of waiting for ground-truth labels or accuracy reports, the system track
 
 7.Works with live webcam or pre-recorded video feeds
 
-## 🎬 Demo Flow (What Judges See)
+## 🎬 Demo Flow 
 
 1. Upload a clean industrial video → system remains stable  
 2. Degrade video quality (fog / blur) → confidence drops  

@@ -1,6 +1,8 @@
 1. Prerequisites
 Python 3.8 or higher installed.
+
 A modern web browser (Chrome/Edge/Firefox).
+
 A webcam (optional, for live demos).
 
 2. Install Backend Dependencies

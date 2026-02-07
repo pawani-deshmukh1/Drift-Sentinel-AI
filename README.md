@@ -38,7 +38,7 @@ Instead of waiting for ground-truth labels or accuracy reports, the system track
 All supporting materials are available in the `docs/` folder:
 
 - 📘 **Model Report (PDF)**  
-  [`docs/Model Report.pdf`](Docs/ModelReport.pdf)
+  [`docs/Model Report.pdf`](Docs/Model Report.pdf)
 
 - 🧩 **System Architecture Diagram**  
   [`docs/System_Architecture.png`](Docs/System_Architecture.png)

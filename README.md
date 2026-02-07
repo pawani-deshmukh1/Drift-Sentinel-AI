@@ -33,6 +33,18 @@ Instead of waiting for ground-truth labels or accuracy reports, the system track
 6. Supervisor recalibrates system safely
 
 
+## 📄 Additional Resources
+
+All supporting materials are available in the `docs/` folder:
+
+- 📘 **Model Report (PDF)**  
+  [`docs/Model Report.pdf`](docs/ModelReport.pdf)
+
+- 🧩 **System Architecture Diagram**  
+  [`docs/System_Architecture.png`](docs/System_Architecture.png)
+
+- 🎥 **Demo Video Walkthrough**  
+  [`docs/Demo-model.mp4`](docs/Demo-model.mp4)
 
 
 

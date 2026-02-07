@@ -1,78 +1,96 @@
 const API = "http://127.0.0.1:8000";
 
-// DOM Elements
-const video = document.getElementById("main-video");
-const sourceToggle = document.getElementById("source-toggle");
-const uploadBtn = document.getElementById("upload-btn-container");
-const fileInput = document.getElementById("video-upload");
-const qualitySlider = document.getElementById("quality-slider");
-const qualityVal = document.getElementById("quality-val");
-const lockdownOverlay = document.getElementById("lockdown-overlay");
-const recalibrateBtn = document.getElementById("recalibrate-btn");
+// --- 1. SAFE ELEMENT SELECTOR ---
+function get(id) {
+    const el = document.getElementById(id);
+    if (!el) console.warn(`Element ${id} missing`);
+    return el;
+}
+
+// Elements
+const video = get("main-video");
+const yoloFeed = get("yolo-feed");
+const sourceToggle = get("source-toggle");
+const uploadBtn = get("upload-btn-container");
+const fileInput = get("video-upload");
+const qualitySlider = get("quality-slider");
+const qualityVal = get("quality-val");
+const recalibrateBtn = get("recalibrate-btn");
+const lockdownOverlay = get("lockdown-overlay");
 
 // Metrics
-const riskEl = document.getElementById("riskLevel");
-const scoreEl = document.getElementById("driftScore");
-const fuelFill = document.getElementById("fuelFill");
-const fuelText = document.getElementById("fuelText");
-const globalStatus = document.getElementById("global-status");
-
-// --- 1. INITIALIZE THE TREND CHART ---
-const ctx = document.getElementById("trendChart").getContext("2d");
-const trendChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: Array(20).fill(''), // Empty labels for clean look
-        datasets: [{
-            data: Array(20).fill(0),
-            borderColor: '#58a6ff',
-            borderWidth: 2,
-            pointRadius: 0,
-            tension: 0.4, // Smooth curves
-            fill: true,
-            backgroundColor: 'rgba(88, 166, 255, 0.1)'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false, // Turn off animation for real-time performance
-        plugins: { legend: { display: false } },
-        scales: {
-            x: { display: false },
-            y: { display: false, min: 0, max: 100 }
-        }
-    }
-});
+const riskEl = get("riskLevel");
+const scoreEl = get("driftScore");
+const fuelFill = get("fuelFill");
+const fuelText = get("fuelText");
 
 let currentQuality = 1.0;
+let trendChart = null;
 
-// --- 2. WEBCAM & CONTROLS ---
+// --- 2. INITIALIZE CHART ---
+try {
+    const ctxEl = document.getElementById("trendChart");
+    if (ctxEl) {
+        const ctx = ctxEl.getContext("2d");
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    data: Array(20).fill(0),
+                    borderColor: '#58a6ff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(88, 166, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } }
+            }
+        });
+    }
+} catch (e) { console.error("Chart Init Failed", e); }
+
+// --- 3. INPUT CONTROLS ---
+
+// Webcam Start
 function startWebcam() {
-    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => { video.srcObject = stream; video.play(); })
-            .catch(console.error);
+            .then(stream => { if(video) video.srcObject = stream; })
+            .catch(e => console.error("Webcam Error", e));
     }
 }
-startWebcam();
 
+// Initial Start
+if (sourceToggle && !sourceToggle.checked) startWebcam();
+
+// Toggle Logic
 if (sourceToggle) {
     sourceToggle.addEventListener("change", (e) => {
         if (e.target.checked) {
-            video.srcObject = null;
-            uploadBtn.classList.remove("hidden");
+            // Switch to File
+            if(video) video.srcObject = null;
+            if(uploadBtn) uploadBtn.classList.remove("hidden");
         } else {
-            uploadBtn.classList.add("hidden");
+            // Switch to Webcam
+            if(uploadBtn) uploadBtn.classList.add("hidden");
             startWebcam();
         }
     });
 }
 
+// File Upload Logic
 if (fileInput) {
     fileInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
-        if (file) {
+        if (file && video) {
             video.src = URL.createObjectURL(file);
             video.loop = true;
             video.play();
@@ -80,92 +98,93 @@ if (fileInput) {
     });
 }
 
+// Slider Logic
 if (qualitySlider) {
     qualitySlider.addEventListener("input", (e) => {
         currentQuality = e.target.value / 100;
         if(qualityVal) qualityVal.innerText = Math.round(currentQuality * 100) + "%";
+        
+        // Visual Blur
         const blur = (1 - currentQuality) * 15;
-        const gray = (1 - currentQuality) * 100;
-        video.style.filter = `blur(${blur}px) grayscale(${gray}%) brightness(${50 + (currentQuality * 50)}%)`;
+        if(video) video.style.filter = `blur(${blur}px) grayscale(${(1-currentQuality)*100}%)`;
     });
 }
 
-// Supervisor Recalibrate
+// Recalibrate Button
 if (recalibrateBtn) {
     recalibrateBtn.addEventListener("click", async () => {
         try {
             await fetch(`${API}/calibrate`, { method: "POST" });
-            alert("✅ System Re-Baselined!");
+            alert("✅ System Re-Baselined to Current Environment");
         } catch (e) { alert("Backend Offline"); }
     });
 }
 
-// --- 3. MAIN LOOP ---
-// 4. MAIN LOOP (Optimized)
+// --- 4. MAIN LOOP ---
 setInterval(async () => {
-    // Send Frame
-    if (video.readyState === 4) {
-        // Create a small canvas for processing (320x240 is enough for drift detection)
-        const canvas = document.createElement("canvas");
-        canvas.width = 320; 
-        canvas.height = 240;
-        const ctx = canvas.getContext("2d");
-        
-        // Draw the video frame scaled down
-        ctx.drawImage(video, 0, 0, 320, 240);
-        
-        // Send as low-quality JPEG for speed
-        canvas.toBlob(async (blob) => {
-            const formData = new FormData();
-            formData.append("file", blob, "frame.jpg");
-            try {
-                await fetch(`${API}/process-frame?quality_flag=${currentQuality}`, { method: "POST", body: formData });
-            } catch(e) {}
-        }, "image/jpeg", 0.7); // 70% quality
-    }
+    if (!video || video.readyState !== 4) return;
 
-    // Fetch Status (Same as before...)
-    try {
-        const res = await fetch(`${API}/status`);
-        const data = await res.json();
+    // A. Capture & Send
+    const canvas = document.createElement("canvas");
+    canvas.width = 320; canvas.height = 240;
+    canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+    
+    canvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
 
-        if(scoreEl) scoreEl.innerText = data.global_drift_score.toFixed(1);
-        
-        if(riskEl) {
-            riskEl.innerText = data.risk_level;
-            riskEl.style.color = data.risk_level === "CRITICAL" ? "#cf222e" : "#2da44e";
-        }
-        
-        if(fuelFill) {
-            fuelFill.style.width = data.risk_budget + "%";
-            if(fuelText) fuelText.innerText = Math.round(data.risk_budget) + "% Remaining";
-            fuelFill.style.background = data.risk_level === "CRITICAL" ? "#cf222e" : "#2da44e";
-        }
+        try {
+            const res = await fetch(`${API}/process-frame?quality_flag=${currentQuality}`, { 
+                method: "POST", body: formData 
+            });
+            const data = await res.json();
 
-        // Chart Update
-        const chartData = trendChart.data.datasets[0].data;
-        chartData.shift();
-        chartData.push(data.global_drift_score);
-        
-        if(data.global_drift_score > 60) {
-            trendChart.data.datasets[0].borderColor = "#cf222e";
-            trendChart.data.datasets[0].backgroundColor = "rgba(207, 34, 46, 0.2)";
-        } else {
-            trendChart.data.datasets[0].borderColor = "#58a6ff";
-            trendChart.data.datasets[0].backgroundColor = "rgba(88, 166, 255, 0.1)";
-        }
-        trendChart.update();
+            // B. Update YOLO (Left Screen)
+            if (data.yolo_image && yoloFeed) {
+                yoloFeed.src = data.yolo_image;
+                // Match Blur visual
+                const blur = (1 - currentQuality) * 5; 
+                yoloFeed.style.filter = `blur(${blur}px) grayscale(${(1-currentQuality)*80}%)`;
+            }
 
-        // Lockdown
-        if(lockdownOverlay) {
-            if (data.risk_level === "CRITICAL") lockdownOverlay.classList.remove("hidden");
-            else lockdownOverlay.classList.add("hidden");
-        }
-        
-        if(globalStatus) {
-            globalStatus.innerText = data.risk_level === "CRITICAL" ? "CRITICAL FAILURE" : "SYSTEM ACTIVE";
-            globalStatus.className = data.risk_level === "CRITICAL" ? "status crit" : "status ok";
-        }
+            // C. Update Metrics (Right Screen)
+            if(scoreEl) scoreEl.innerText = data.current_drift.toFixed(1);
+            if(riskEl) {
+                riskEl.innerText = data.risk;
+                riskEl.style.color = data.risk === "CRITICAL" ? "#cf222e" : "#2da44e";
+            }
+            
+            // D. Update Fuel Bar
+            if(fuelFill) {
+                fuelFill.style.width = data.risk_budget + "%";
+                fuelFill.style.background = data.risk_budget < 30 ? "#cf222e" : "#2da44e";
+                if(fuelText) fuelText.innerText = Math.round(data.risk_budget) + "% Fuel";
+            }
 
-    } catch(e) {}
-}, 1000);
+            // E. Update Chart
+            if (trendChart) {
+                const chartData = trendChart.data.datasets[0].data;
+                chartData.shift();
+                chartData.push(data.current_drift);
+                
+                // Color change based on risk
+                if(data.current_drift > 60) {
+                    trendChart.data.datasets[0].borderColor = "#cf222e";
+                    trendChart.data.datasets[0].backgroundColor = "rgba(207, 34, 46, 0.2)";
+                } else {
+                    trendChart.data.datasets[0].borderColor = "#58a6ff";
+                    trendChart.data.datasets[0].backgroundColor = "rgba(88, 166, 255, 0.1)";
+                }
+                trendChart.update();
+            }
+
+            // F. Lockdown Overlay
+            if(lockdownOverlay) {
+                if (data.risk === "CRITICAL") lockdownOverlay.classList.remove("hidden");
+                else lockdownOverlay.classList.add("hidden");
+            }
+
+        } catch(e) { console.error(e); }
+    }, "image/jpeg", 0.7);
+
+}, 500);

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Drift Sentinel | Command Center</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,10 +27,10 @@
   <div class="grid">
     
     <section class="card wide">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-        <h2>Live Vision Feed</h2>
-        <div style="display: flex; align-items: center; gap: 15px;">
-             <label style="color: #58a6ff; cursor: pointer; font-weight: 600;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Live System Comparison</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <label style="color: #58a6ff; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
                 <input type="checkbox" id="source-toggle"> Video File
             </label>
             <label id="upload-btn-container" class="upload hidden">
@@ -38,33 +39,56 @@
         </div>
       </div>
 
-      <div class="video-wrapper"> 
-        <video id="main-video" autoplay loop muted playsinline></video>
-        <div id="lockdown-overlay" class="lockdown hidden">
-             <div class="lockdown-text">⛔ SYSTEM LOCKDOWN</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        
+        <div class="video-container" style="position: relative; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #30363d;">
+            <div style="padding: 8px 12px; background: #0d1117; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #8b949e; font-size: 0.8rem; font-weight: 600;">🔴 Standard Vision Model</span>
+                <span style="font-size: 0.7rem; background: #238636; color: white; padding: 2px 6px; border-radius: 4px;">RUNNING</span>
+            </div>
+            <img id="yolo-feed" style="width: 100%; height: auto; display: block; min-height: 240px; object-fit: cover;" />
+            
+            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #8b949e; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                Blindly Predicting...
+            </div>
         </div>
+
+        <div class="video-container" style="position: relative; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #30363d;">
+             <div style="padding: 8px 12px; background: #0d1117; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #58a6ff; font-size: 0.8rem; font-weight: 600;">🟢 Sentinel Reliability Layer</span>
+                <span style="font-size: 0.7rem; background: #1f6feb; color: white; padding: 2px 6px; border-radius: 4px;">PROTECTED</span>
+            </div>
+            
+            <div class="video-wrapper" style="position: relative;"> 
+                <video id="main-video" autoplay loop muted playsinline style="width: 100%; height: auto; display: block; min-height: 240px; object-fit: cover;"></video>
+                <div id="lockdown-overlay" class="lockdown hidden">
+                     <div class="lockdown-text">⛔ SYSTEM LOCKDOWN</div>
+                </div>
+            </div>
+        </div>
+
       </div>
 
-      <div style="margin-top: 15px; padding: 12px; background: #0c1117; border-radius: 6px;">
-        <label style="display: flex; justify-content: space-between; color: #8b949e; margin-bottom: 8px;">
+      <div style="margin-top: 20px; padding: 15px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d;">
+        <label style="display: flex; justify-content: space-between; color: #c9d1d9; margin-bottom: 10px; font-weight: 500;">
             <span>⚠️ Drift Simulation (Fog Level)</span>
-            <span id="quality-val" style="color: #3b82f6;">100%</span>
+            <span id="quality-val" style="color: #58a6ff; font-family: monospace;">100%</span>
         </label>
-        <input type="range" id="quality-slider" min="0" max="100" value="100" style="width: 100%;">
+        <input type="range" id="quality-slider" min="0" max="100" value="100" style="width: 100%; cursor: pointer;">
       </div>
     </section>
 
-<section class="card">
+    <section class="card">
       <h2>System Health</h2>
       
       <div style="display: flex; justify-content: space-between; margin-top: 15px;">
           <div>
-            <p style="color: #8b949e; font-size: 0.8rem;">Risk Level</p>
-            <h3 id="riskLevel" style="color: #2da44e;">LOW</h3>
+            <p style="color: #8b949e; font-size: 0.8rem; margin-bottom: 4px;">Risk Level</p>
+            <h3 id="riskLevel" style="color: #2da44e; font-size: 1.5rem;">LOW</h3>
           </div>
           <div style="text-align: right;">
-            <p style="color: #8b949e; font-size: 0.8rem;">Drift Score</p>
-            <h3 id="driftScore" style="color: #58a6ff;">0.0</h3>
+            <p style="color: #8b949e; font-size: 0.8rem; margin-bottom: 4px;">Drift Score</p>
+            <h3 id="driftScore" style="color: #58a6ff; font-size: 1.5rem;">0.0</h3>
           </div>
       </div>
 
@@ -73,12 +97,12 @@
       </div>
 
       <div style="margin-top: 20px;">
-        <p style="font-size: 0.8rem;">Risk Budget (Fuel)</p>
+        <p style="font-size: 0.8rem; margin-bottom: 8px;">Risk Budget (Fuel)</p>
         <div class="fuel"><div id="fuelFill"></div></div>
         <p id="fuelText" style="text-align: right; margin-top: 5px; color: #8b949e; font-size: 0.8rem;">100% Remaining</p>
       </div>
 
-      <button id="recalibrate-btn" class="btn-super" style="margin-top: 20px; width: 100%; padding: 10px; background: #1f6feb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+      <button id="recalibrate-btn" class="btn-super" style="margin-top: 20px;">
         🛠️ Re-Calibrate Baseline
       </button>
     </section>

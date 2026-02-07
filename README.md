@@ -30,7 +30,9 @@ Instead of waiting for ground-truth labels or accuracy reports, the system track
 3. Risk budget depletes → warnings appear  
 4. Sustained drift → system lockdown  
 5. Explainability panel shows root cause  
-6. Supervisor recalibrates system safely  
+6. Supervisor recalibrates system safely
+
+
 
 
 
